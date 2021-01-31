@@ -57,7 +57,7 @@ class cssden(QMainWindow):
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
-            label.setText(ticker.split(":")[-1])
+            label.setText(ticker.split(":")[-1]+"\t"*(3-math.ceil(len(ticker.split(":")[-1])/4))+"-")
             label.setGeometry(5, 35*i, width, 40)
             self.labels[ticker.split(":")[-1]]= label
 
