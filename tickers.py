@@ -1,6 +1,7 @@
 import sys, math,json
-from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget
+from PyQt5.QtGui import QColor, QMovie
 import websocket
 
 
@@ -14,14 +15,19 @@ class Worker(QObject):
         self.tickers = tickers
 
     def on_message(self, message):
-        message = json.loads(message)
-        # print(message)
-        self.callback(message["data"][0]["s"].split(":")[-1], message["data"][0]["p"])
+        try:
+            message = json.loads(message)
+            # print(message)
+            self.callback(message["data"][0]["s"].split(":")[-1], message["data"][0]["p"])
+        except:
+            pass
 
     def on_error(self,ws, err):
+        print("error---------------------------------")
         self.finished.emit()
 
     def on_close(self):
+        print("closed---------------------------------")
         self.finished.emit()
 
     def run(self):
@@ -44,6 +50,13 @@ class cssden(QMainWindow):
         height = 5+(35*len(tickers))
         self.setFixedSize(width, height)
         self.setStyleSheet("QMainWindow{background-color: black;border: 1px solid black}")
+        self.movie = QMovie("bg.gif")
+        self.background = QLabel(self)
+        self.background.setGeometry(0,0,width,height)
+        self.background.setMovie(self.movie)
+        self.movie.setScaledSize(QSize(width,height))
+        self.movie.start()
+
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowOpacity(0.7)
         self.center()
@@ -64,6 +77,7 @@ class cssden(QMainWindow):
 
         self.oldPos = self.pos()
         self.show()
+
     
     def start_listener(self):
         # Step 2: Create a QThread object
