@@ -1,4 +1,4 @@
-import sys, math,json, os
+import sys, math,json
 from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget
 import websocket
@@ -33,8 +33,6 @@ class Worker(QObject):
                                 on_close = self.on_close)
         ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker+'"}') for ticker in self.tickers]
         ws.run_forever()
-
-
 
 class cssden(QMainWindow):
 
@@ -102,11 +100,8 @@ class cssden(QMainWindow):
 
 
 if __name__ == '__main__':
-    try:
-        tickers = [i.strip() for i in open("tickers.txt").readlines()]
-        app = QApplication(sys.argv)
-        ex = cssden(tickers)
+    tickers = [i.strip() for i in open("tickers.txt").readlines()]
+    app = QApplication(sys.argv)
+    ex = cssden(tickers)
 
-        sys.exit(app.exec_())
-    except:
-        pass
+    sys.exit(app.exec_())
