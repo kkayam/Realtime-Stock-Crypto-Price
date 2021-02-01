@@ -1,4 +1,4 @@
-# Desktop stock/crypto ticker
+# Desktop stock/crypto price
 Get live update for any group of stocks.
 
 - Always on top
