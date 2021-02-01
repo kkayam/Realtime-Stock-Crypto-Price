@@ -6,3 +6,5 @@ Get live update for any group of stocks.
 - Scroll wheel to change opacity
 - Clone and write tickers in tickers.txt
 - Uses finnhub websocket for price updates
+
+![example](pic.png)
