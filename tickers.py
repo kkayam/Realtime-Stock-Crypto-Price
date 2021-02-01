@@ -19,10 +19,10 @@ class Worker(QObject):
         self.callback(message["data"][0]["s"].split(":")[-1], message["data"][0]["p"])
 
     def on_error(self,ws, err):
-        pass
+        self.finished.emit()
 
     def on_close(self):
-        pass
+        self.finished.emit()
 
     def run(self):
         # yliveticker.YLiveTicker(on_ticker=self.callback, ticker_names=tickers)
@@ -55,7 +55,7 @@ class cssden(QMainWindow):
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
-            label.setText(ticker.split(":")[-1]+"\t"*(3-math.ceil(len(ticker.split(":")[-1])/4))+"-")
+            label.setText(ticker.split(":")[-1]+"\t"*(3-math.ceil(len(ticker.split(":")[-1])/6))+"-")
             label.setGeometry(5, 35*i, width, 40)
             self.labels[ticker.split(":")[-1]]= label
 
@@ -74,11 +74,15 @@ class cssden(QMainWindow):
         self.worker.moveToThread(self.thread)
         # Step 5: Connect signals and slots
         self.thread.started.connect(self.worker.run)
+        
+        self.worker.finished.connect(self.thread.quit)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.finished.connect(self.start_listener)
         # Step 6: Start the thread
         self.thread.start()
 
     def update_label(self, ticker,price):
-        self.labels[ticker].setText(ticker+"\t"*(3-math.ceil(len(ticker)/4))+str(format(price, '.6f')))
+        self.labels[ticker].setText(ticker+"\t"*(3-math.ceil(len(ticker)/6))+str(format(price, '.6f')))
         
     def center(self):
         qr = self.frameGeometry()
