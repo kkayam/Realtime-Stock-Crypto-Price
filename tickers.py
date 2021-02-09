@@ -5,6 +5,21 @@ from PyQt5.QtGui import QColor, QMovie
 import websocket
 
 
+class Stock():
+    def __init__(self,ticker,price="-"):
+        self.ticker = ticker
+        self.name = ticker.split(":")[-1]
+        # self.url = ""
+        # if (self.ticker.split(":")[0]=="BINANCE"):
+        #     self.url = "https://www.binance.com/en/trade/"+self.name
+        # else:
+        #     self.url = "https://finance.yahoo.com/quote/"+self.name
+
+        self.tabs = "\t"*(3-math.ceil(len(self.name)/6))
+        self.price = price
+        # self.toString = "<a href='"+self.url+"'>"+self.name+"</a>"+self.tabs
+        self.toString = self.name+self.tabs+self.price
+
 class Worker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
@@ -18,7 +33,7 @@ class Worker(QObject):
         try:
             message = json.loads(message)
             # print(message)
-            self.callback(message["data"][0]["s"].split(":")[-1], message["data"][0]["p"])
+            self.callback(Stock(message["data"][-1]["s"], str(format(message["data"][-1]["p"], '.6f'))))
         except:
             pass
 
@@ -37,7 +52,7 @@ class Worker(QObject):
                                 on_message = self.on_message,
                                 on_error = self.on_error,
                                 on_close = self.on_close)
-        ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker+'"}') for ticker in self.tickers]
+        ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker.ticker+'"}') for ticker in self.tickers]
         ws.run_forever()
 
 class cssden(QMainWindow):
@@ -46,7 +61,7 @@ class cssden(QMainWindow):
         super().__init__()
 
         # <MainWindow Properties>
-        width = 350
+        width = 360
         height = 5+(35*len(tickers))
         self.setFixedSize(width, height)
         self.setStyleSheet("QMainWindow{background-color: black;border: 1px solid black}")
@@ -65,12 +80,13 @@ class cssden(QMainWindow):
         # <Label Properties>
         self.tickers = tickers
         self.labels={}
+
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
-            label.setText(ticker.split(":")[-1]+"\t"*(3-math.ceil(len(ticker.split(":")[-1])/6))+"-")
+            label.setText(ticker.toString)
             label.setGeometry(5, 35*i, width, 40)
-            self.labels[ticker.split(":")[-1]]= label
+            self.labels[ticker.name]= label
 
         # </Label Properties>
         self.start_listener()
@@ -78,7 +94,7 @@ class cssden(QMainWindow):
         self.oldPos = self.pos()
         self.show()
 
-    
+    # Listens for updates from tickers
     def start_listener(self):
         # Step 2: Create a QThread object
         self.thread = QThread()
@@ -95,8 +111,8 @@ class cssden(QMainWindow):
         # Step 6: Start the thread
         self.thread.start()
 
-    def update_label(self, ticker,price):
-        self.labels[ticker].setText(ticker+"\t"*(3-math.ceil(len(ticker)/6))+str(format(price, '.6f')))
+    def update_label(self,ticker):
+        self.labels[ticker.name].setText(ticker.toString)
         
     def center(self):
         qr = self.frameGeometry()
@@ -118,7 +134,7 @@ class cssden(QMainWindow):
 
 
 if __name__ == '__main__':
-    tickers = [i.strip() for i in open("tickers.txt").readlines()]
+    tickers = [Stock(i.strip()) for i in open("tickers.txt").readlines()]
     app = QApplication(sys.argv)
     ex = cssden(tickers)
 
