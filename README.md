@@ -5,7 +5,7 @@ Get live update for any group of stocks.
 - Drag to move
 - Scroll wheel to change opacity
 - Edit background and tickers in config.txt
-- Import any gif background using url or from resources folder (just 
+- Import any gif background using url or from resources folder
 - Uses finnhub websocket for price updates
 
 ## Config File Format
