@@ -9,7 +9,7 @@ Get live update for any group of stocks.
 - Uses finnhub websocket for price updates
 
 ## Config File Format
-First line is always for background, paste in the url or path in config.txt after background=.
+First line is always for background, paste in the url or path after background=.
 
 1 Ticker per line.
 
