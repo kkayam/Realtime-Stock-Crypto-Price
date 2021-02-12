@@ -1,4 +1,6 @@
-import sys, math,json
+import sys, math,json, os.path, hashlib
+import requests
+
 from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget
 from PyQt5.QtGui import QColor, QMovie
@@ -48,7 +50,7 @@ class Worker(QObject):
     def run(self):
         # yliveticker.YLiveTicker(on_ticker=self.callback, ticker_names=tickers)
         websocket.enableTrace(True)
-        ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c0bha8748v6to0rp299g",
+        ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c0jbko748v6vejlec51g",
                                 on_message = self.on_message,
                                 on_error = self.on_error,
                                 on_close = self.on_close)
@@ -57,7 +59,7 @@ class Worker(QObject):
 
 class cssden(QMainWindow):
 
-    def __init__(self, tickers):
+    def __init__(self, tickers, bg):
         super().__init__()
 
         # <MainWindow Properties>
@@ -65,7 +67,19 @@ class cssden(QMainWindow):
         height = 5+(35*len(tickers))
         self.setFixedSize(width, height)
         self.setStyleSheet("QMainWindow{background-color: black;border: 1px solid black}")
-        self.movie = QMovie("bg.gif")
+        
+        # Background
+        if not bg.startswith("resources"):
+            bg_name = "resources\\"+str(hash(bg))+".gif"
+            if not (os.path.isfile(bg_name)):
+                r = requests.get(bg, allow_redirects=True)
+                open(bg_name,"wb").write(r.content)
+        else:
+            bg_name = bg
+
+        self.movie = QMovie(bg_name)
+
+
         self.background = QLabel(self)
         self.background.setGeometry(0,0,width,height)
         self.background.setMovie(self.movie)
@@ -134,8 +148,10 @@ class cssden(QMainWindow):
 
 
 if __name__ == '__main__':
-    tickers = [Stock(i.strip()) for i in open("tickers.txt").readlines()]
+    txt = open("config.txt")
+    bg = txt.readline().split("=")[-1].strip()
+    tickers = [Stock(i.strip()) for i in txt.readlines()]
     app = QApplication(sys.argv)
-    ex = cssden(tickers)
+    ex = cssden(tickers,bg)
 
     sys.exit(app.exec_())
