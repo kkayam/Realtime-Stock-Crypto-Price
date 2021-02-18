@@ -201,7 +201,7 @@ class cssden(QMainWindow):
         self.oldPos = event.globalPos()
 
     def wheelEvent(self, event):
-        opacity = max(self.windowOpacity()+(event.angleDelta().y() / 1020),0.05)
+        opacity = max(self.windowOpacity()+(event.angleDelta().y() / 1020),0.015)
         self.setWindowOpacity(opacity)
 
 
