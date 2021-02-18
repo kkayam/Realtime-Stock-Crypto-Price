@@ -1,16 +1,22 @@
 import sys, math,json, os.path, hashlib
 import requests
+from functools import reduce
 
 from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget
 from PyQt5.QtGui import QColor, QMovie
 import websocket
 
-
 class Stock():
-    def __init__(self,ticker,price="-"):
-        self.ticker = ticker
-        self.name = ticker.split(":")[-1]
+    def __init__(self,i,price="-"):
+        i = i.split(":")
+        self.ticker = ":".join(i[:2])
+        self.name = i[1]
+        self.position_exists = False
+        if (len(i)>2):
+            self.position_exists = True        
+            self.position = [float(x) for x in i[2].split("@")]
+        self.label = None
         # self.url = ""
         # if (self.ticker.split(":")[0]=="BINANCE"):
         #     self.url = "https://www.binance.com/en/trade/"+self.name
@@ -19,8 +25,18 @@ class Stock():
 
         self.tabs = "\t"*(3-math.ceil(len(self.name)/6))
         self.price = price
+        self.profit = None
         # self.toString = "<a href='"+self.url+"'>"+self.name+"</a>"+self.tabs
         self.toString = self.name+self.tabs+self.price
+    def update_label(self):
+        self.label.setText(self.toString)
+    def update_price(self, price):
+        self.price = price
+        self.toString = self.name+self.tabs+self.price
+        if (self.position_exists):
+            self.profit = (float(price)-self.position[1])*self.position[0]
+            self.toString = self.name+self.tabs+self.price+"\t"+str(round(self.profit))+" USD"
+        self.update_label()
 
 class Worker(QObject):
     finished = pyqtSignal()
@@ -35,7 +51,7 @@ class Worker(QObject):
         try:
             message = json.loads(message)
             # print(message)
-            self.callback(Stock(message["data"][-1]["s"], str(format(message["data"][-1]["p"], '.6f'))))
+            self.callback(message["data"][-1]["s"],str(format(message["data"][-1]["p"], '.6f')))
         except:
             pass
 
@@ -65,6 +81,11 @@ class cssden(QMainWindow):
         # <MainWindow Properties>
         width = 360
         height = 5+(35*len(tickers))
+        self.position_exists = any(x.position_exists for x in tickers)
+        if (self.position_exists):
+            width = 520
+            height+=35
+        
         self.setFixedSize(width, height)
         self.setStyleSheet("QMainWindow{background-color: black;border: 1px solid black}")
         
@@ -92,28 +113,35 @@ class cssden(QMainWindow):
         # </MainWindow Properties>
 
         # <Label Properties>
-        self.tickers = tickers
-        self.labels={}
+        self.tickers={}
 
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             label.setText(ticker.toString)
             label.setGeometry(5, 35*i, width, 40)
-            self.labels[ticker.name]= label
+            ticker.label = label
+            self.tickers[ticker.ticker]= ticker
+
+        if (self.position_exists):
+            self.profit_label = QLabel(self)
+            self.profit_label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
+            self.profit_label.setText("Profit"+"\t"*(4-math.ceil(len("Profit")/6))+"\t0")
+            self.profit_label.setGeometry(5, 35*len(tickers), width, 40)
 
         # </Label Properties>
         self.start_listener()
 
         self.oldPos = self.pos()
         self.show()
-
+    def calc_profit(self):
+        return str(format(sum(ticker.profit for ticker in list(filter(lambda x: isinstance(x.profit, float),self.tickers.values()))), '.1f'))
     # Listens for updates from tickers
     def start_listener(self):
         # Step 2: Create a QThread object
         self.thread = QThread()
         # Step 3: Create a worker object
-        self.worker = Worker(self.update_label,self.tickers)
+        self.worker = Worker(self.update_label,self.tickers.values())
         # Step 4: Move worker to the thread
         self.worker.moveToThread(self.thread)
         # Step 5: Connect signals and slots
@@ -125,8 +153,10 @@ class cssden(QMainWindow):
         # Step 6: Start the thread
         self.thread.start()
 
-    def update_label(self,ticker):
-        self.labels[ticker.name].setText(ticker.toString)
+    def update_label(self,ticker,price):
+        self.tickers[ticker].update_price(price)
+        if (self.position_exists):
+            self.profit_label.setText("Profit"+"\t"*(5-math.ceil(len("Profit")/6))+self.calc_profit()+" USD")
         
     def center(self):
         qr = self.frameGeometry()
