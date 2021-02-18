@@ -3,9 +3,24 @@ import requests
 from functools import reduce
 
 from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget, QFrame, QSizePolicy
 from PyQt5.QtGui import QColor, QMovie
 import websocket
+from PyQt5.QtWidgets import (QWidget, QPushButton,
+                             QHBoxLayout, QVBoxLayout)
+
+class QHSeperationLine(QFrame):
+  '''
+  a horizontal seperation line\n
+  '''
+  def __init__(self):
+    super().__init__()
+    self.setMinimumWidth(1)
+    self.setFixedHeight(20)
+    self.setFrameShape(QFrame.HLine)
+    self.setFrameShadow(QFrame.Sunken)
+    self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
+    return
 
 class Stock():
     def __init__(self,i,price="-"):
@@ -86,7 +101,10 @@ class cssden(QMainWindow):
             width = 520
             height+=35
         
-        self.setFixedSize(width, height)
+        vbox = QVBoxLayout()
+        # vbox.setSpacing(10)
+
+        # self.setFixedSize(width, height)
         self.setStyleSheet("QMainWindow{background-color: black;border: 1px solid black}")
         
         # Background
@@ -101,11 +119,7 @@ class cssden(QMainWindow):
         self.movie = QMovie(bg_name)
 
 
-        self.background = QLabel(self)
-        self.background.setGeometry(0,0,width,height)
-        self.background.setMovie(self.movie)
-        self.movie.setScaledSize(QSize(width,height))
-        self.movie.start()
+        
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowOpacity(0.7)
@@ -119,16 +133,30 @@ class cssden(QMainWindow):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             label.setText(ticker.toString)
-            label.setGeometry(5, 35*i, width, 40)
+            vbox.addWidget(label)
+            # label.setGeometry(5, 35*i, width, 40)
             ticker.label = label
             self.tickers[ticker.ticker]= ticker
 
         if (self.position_exists):
+            seperator_horizontal = QHSeperationLine()
+            vbox.addWidget(seperator_horizontal)
+            
             self.profit_label = QLabel(self)
             self.profit_label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             self.profit_label.setText("Profit"+"\t"*(4-math.ceil(len("Profit")/6))+"\t0")
-            self.profit_label.setGeometry(5, 35*len(tickers), width, 40)
+            vbox.addWidget(self.profit_label)
+            # self.profit_label.setGeometry(5, 35*len(tickers), width, 40)
 
+        widget = QWidget()
+        self.background = QLabel(self)
+        self.background.setGeometry(0,0,widget.width(),widget.height())
+        self.background.setMovie(self.movie)
+        self.movie.setScaledSize(QSize(widget.width(),widget.height()))
+        self.movie.start()
+        widget.setLayout(vbox)
+        widget.resizeEvent = lambda x: self.background.setGeometry(0,0,widget.width(),widget.height())
+        self.setCentralWidget(widget)
         # </Label Properties>
         self.start_listener()
 
