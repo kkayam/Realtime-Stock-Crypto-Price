@@ -1,3 +1,0 @@
-background=resources\bg.gif
-BINANCE:BTCUSDT
-TSLA
