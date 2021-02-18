@@ -23,4 +23,8 @@ For normal stocks, e.g. Gamestop:
 
 GME
 
+If you want to see profits, write in this format for the stocks/cryptos you are interested in seeing the profit for:
+
+(exchange:)ticker:amount@price
+
 ![example](resources/pic.png)
