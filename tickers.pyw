@@ -45,6 +45,8 @@ class Stock():
         self.toString = self.name+self.tabs+self.price
     def update_label(self):
         self.label.setText(self.toString)
+        if (self.position_exists):
+            self.label.setToolTip("@".join([str(x) for x in self.position])+" tot: "+str(self.position[0]*float(self.price))+" USD")
     def update_price(self, price):
         self.price = price
         self.toString = self.name+self.tabs+self.price
@@ -133,6 +135,7 @@ class cssden(QMainWindow):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             label.setText(ticker.toString)
+            label.setToolTip("@".join([str(x) for x in ticker.position])+" tot: "+str(reduce(lambda x, y: x*y, ticker.position))+" USD")
             vbox.addWidget(label)
             # label.setGeometry(5, 35*i, width, 40)
             ticker.label = label
