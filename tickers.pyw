@@ -130,7 +130,8 @@ class cssden(QMainWindow):
 
         # <Label Properties>
         self.tickers={}
-
+        
+        if self.position_exists: tickers.sort(key=lambda x: x.position[0]*x.position[1], reverse=True)
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
