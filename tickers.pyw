@@ -65,12 +65,10 @@ class Worker(QObject):
         self.tickers = tickers
 
     def on_message(self, message):
-        try:
-            message = json.loads(message)
-            # print(message)
-            self.callback(message["data"][-1]["s"],str(format(message["data"][-1]["p"], '.6f')))
-        except:
-            pass
+        message = json.loads(message)
+        if "data" in message:
+            for i in message["data"]:
+                self.callback(i["s"],str(format(i["p"], '.6f')))
 
     def on_error(self,ws, err):
         print("error---------------------------------")
@@ -118,10 +116,7 @@ class cssden(QMainWindow):
         else:
             bg_name = bg
 
-        self.movie = QMovie(bg_name)
-
-
-        
+        self.movie = QMovie(bg_name)        
 
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowOpacity(0.7)
@@ -210,6 +205,12 @@ class cssden(QMainWindow):
 
 
 if __name__ == '__main__':
+    sys._excepthook = sys.excepthook 
+    def exception_hook(exctype, value, traceback):
+        print(exctype, value, traceback)
+        sys._excepthook(exctype, value, traceback) 
+        sys.exit(1) 
+    sys.excepthook = exception_hook 
     txt = open("config.txt")
     bg = txt.readline().split("=")[-1].strip()
     tickers = [Stock(i.strip()) for i in txt.readlines()]
