@@ -7,6 +7,7 @@ Get live update for any group of stocks.
 - Edit background and tickers in config.txt
 - Import any gif background using url or from resources folder
 - Uses finnhub websocket for price updates
+- No scraping or any bullshit like that, strictly for price monitoring, check the code
 
 ## Config File Format
 First line is always for background, paste in the url or path after background=.

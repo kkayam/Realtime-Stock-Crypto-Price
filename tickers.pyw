@@ -66,9 +66,14 @@ class Worker(QObject):
 
     def on_message(self, message):
         message = json.loads(message)
+        updated = []
+        # print(message)
         if "data" in message:
             for i in message["data"]:
-                self.callback(i["s"],str(format(i["p"], '.6f')))
+                # print(i)
+                if ("s" in i and "p" in i and i["s"] not in updated):
+                    updated.append(i["s"])
+                    self.callback(i["s"],str(format(i["p"], '.6f')))
 
     def on_error(self,ws, err):
         print("error---------------------------------")
