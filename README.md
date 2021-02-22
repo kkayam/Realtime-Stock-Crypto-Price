@@ -28,4 +28,8 @@ If you want to see profits, write in this format for the stocks/cryptos you are 
 
 (exchange:)ticker:amount@price
 
+You can also insert multiple positions, delimited by a comma (","):
+
+(exchange:)ticker:amount1@price1,amount2@price2,amount3@price3...
+
 ![example](resources/pic.png)
