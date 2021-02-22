@@ -29,8 +29,16 @@ class Stock():
         self.name = i[1]
         self.position_exists = False
         if (len(i)>2):
-            self.position_exists = True        
-            self.position = [float(x) for x in i[2].split("@")]
+            self.position_exists = True
+            positions = i[2].split(",")
+            self.position = [0,0]
+            for x in positions:
+                a = x.split("@")
+                self.position[0] += float(a[0])
+                self.position[1] += float(a[1])*float(a[0])
+            self.position[1] = self.position[1]/self.position[0]
+
+
         self.label = None
         # self.url = ""
         # if (self.ticker.split(":")[0]=="BINANCE"):
@@ -52,7 +60,10 @@ class Stock():
         self.toString = self.name+self.tabs+self.price
         if (self.position_exists):
             self.profit = (float(price)-self.position[1])*self.position[0]
-            self.toString = self.name+self.tabs+self.price+"\t"+str(round(self.profit))+" USD"
+            if (len(str(round(self.profit)))>3):
+                self.toString = self.name+self.tabs+self.price+"\t"+str(round(self.profit))+" USD\t"+str(format(100*(float(self.price)-self.position[1])/self.position[1],".1f"))+"%"
+            else:
+                self.toString = self.name+self.tabs+self.price+"\t"+str(round(self.profit))+" USD\t\t"+str(format(100*(float(self.price)-self.position[1])/self.position[1],".1f"))+"%"
         self.update_label()
 
 class Worker(QObject):
@@ -130,13 +141,14 @@ class cssden(QMainWindow):
 
         # <Label Properties>
         self.tickers={}
-        
-        if self.position_exists: tickers.sort(key=lambda x: x.position[0]*x.position[1], reverse=True)
+
+        tickers = sorted(list(filter(lambda x: x.position_exists,tickers)),key=lambda x: x.position[0]*x.position[1], reverse=True)+list(filter(lambda x: (not x.position_exists),tickers))
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             label.setText(ticker.toString)
-            label.setToolTip("@".join([str(x) for x in ticker.position])+" tot: "+str(reduce(lambda x, y: x*y, ticker.position))+" USD")
+            if (ticker.position_exists):
+                label.setToolTip("@".join([str(x) for x in ticker.position])+" tot: "+str(reduce(lambda x, y: x*y, ticker.position))+" USD")
             vbox.addWidget(label)
             # label.setGeometry(5, 35*i, width, 40)
             ticker.label = label
