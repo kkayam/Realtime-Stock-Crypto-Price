@@ -2,7 +2,7 @@ import sys, math,json, os.path, hashlib
 import requests
 from functools import reduce
 
-from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize
+from PyQt5.QtCore import Qt, QPoint, QObject, QThread, pyqtSignal, QSize, QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QDesktopWidget, QFrame, QSizePolicy
 from PyQt5.QtGui import QColor, QMovie
 import websocket
@@ -49,12 +49,14 @@ class Stock():
         self.tabs = "\t"*(3-math.ceil(len(self.name)/6))
         self.price = price
         self.profit = None
+        self.total = 0
         # self.toString = "<a href='"+self.url+"'>"+self.name+"</a>"+self.tabs
         self.toString = self.name+self.tabs+self.price
     def update_label(self):
         self.label.setText(self.toString)
         if (self.position_exists):
-            self.label.setToolTip("@".join([str(x) for x in self.position])+" tot: "+str(self.position[0]*float(self.price))+" USD")
+            self.total = self.position[0]*float(self.price)
+            self.label.setToolTip("@".join([str(x) for x in self.position])+" tot: "+str(self.total)+" USD")
     def update_price(self, price):
         self.price = price
         self.toString = self.name+self.tabs+self.price
@@ -69,6 +71,7 @@ class Stock():
 class Worker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
+    started = pyqtSignal()
     
     def __init__(self, callback, tickers):
         super().__init__()
@@ -77,14 +80,12 @@ class Worker(QObject):
 
     def on_message(self, message):
         message = json.loads(message)
-        updated = []
         # print(message)
         if "data" in message:
             for i in message["data"]:
-                # print(i)
-                if ("s" in i and "p" in i and i["s"] not in updated):
-                    updated.append(i["s"])
-                    self.callback(i["s"],str(format(i["p"], '.6f')))
+                if i["s"] in self.tickers:
+                    self.tickers[i["s"]].price = str(format(i["p"], '.6f'))
+        self.started.emit()
 
     def on_error(self,ws, err):
         print("error---------------------------------")
@@ -101,7 +102,7 @@ class Worker(QObject):
                                 on_message = self.on_message,
                                 on_error = self.on_error,
                                 on_close = self.on_close)
-        ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker.ticker+'"}') for ticker in self.tickers]
+        ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker.ticker+'"}') for ticker in self.tickers.values()]
         ws.run_forever()
 
 class cssden(QMainWindow):
@@ -141,6 +142,7 @@ class cssden(QMainWindow):
 
         # <Label Properties>
         self.tickers={}
+        self.initial_investment = 0
 
         tickers = sorted(list(filter(lambda x: x.position_exists,tickers)),key=lambda x: x.position[0]*x.position[1], reverse=True)+list(filter(lambda x: (not x.position_exists),tickers))
         for i,ticker in enumerate(tickers):
@@ -148,6 +150,7 @@ class cssden(QMainWindow):
             label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
             label.setText(ticker.toString)
             if (ticker.position_exists):
+                self.initial_investment += reduce(lambda x, y: x*y, ticker.position)
                 label.setToolTip("@".join([str(x) for x in ticker.position])+" tot: "+str(reduce(lambda x, y: x*y, ticker.position))+" USD")
             vbox.addWidget(label)
             # label.setGeometry(5, 35*i, width, 40)
@@ -160,7 +163,7 @@ class cssden(QMainWindow):
             
             self.profit_label = QLabel(self)
             self.profit_label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
-            self.profit_label.setText("Profit"+"\t"*(4-math.ceil(len("Profit")/6))+"\t0")
+            self.profit_label.setText("Profit"+"\t\t0"+"\t"*(2-math.ceil(len("Profit")/6))+"\t0")
             vbox.addWidget(self.profit_label)
             # self.profit_label.setGeometry(5, 35*len(tickers), width, 40)
 
@@ -175,9 +178,17 @@ class cssden(QMainWindow):
         self.setCentralWidget(widget)
         # </Label Properties>
         self.start_listener()
-
+        
+        
         self.oldPos = self.pos()
         self.show()
+    
+    def start_updateTimer(self):
+        self.updateTimer = QTimer(self)
+        self.updateTimer.setInterval(300)
+        self.updateTimer.timeout.connect(self.update)
+        self.updateTimer.start()
+
     def calc_profit(self):
         return str(format(sum(ticker.profit for ticker in list(filter(lambda x: isinstance(x.profit, float),self.tickers.values()))), '.1f'))
     # Listens for updates from tickers
@@ -185,12 +196,13 @@ class cssden(QMainWindow):
         # Step 2: Create a QThread object
         self.thread = QThread()
         # Step 3: Create a worker object
-        self.worker = Worker(self.update_label,self.tickers.values())
+        self.worker = Worker(self.update_label,self.tickers)
         # Step 4: Move worker to the thread
         self.worker.moveToThread(self.thread)
         # Step 5: Connect signals and slots
         self.thread.started.connect(self.worker.run)
         
+        self.worker.started.connect(self.start_updateTimer)
         self.worker.finished.connect(self.thread.quit)
         self.thread.finished.connect(self.thread.deleteLater)
         self.worker.finished.connect(self.start_listener)
@@ -200,8 +212,18 @@ class cssden(QMainWindow):
     def update_label(self,ticker,price):
         self.tickers[ticker].update_price(price)
         if (self.position_exists):
-            self.profit_label.setText("Profit"+"\t"*(5-math.ceil(len("Profit")/6))+self.calc_profit()+" USD")
-        
+            total = 0
+            for value in self.tickers.values():
+                total += value.total
+            growth = format(total/self.initial_investment*100-100,".1f")
+            total = format(total,".1f")
+            self.profit_label.setText("Profit"+"\t\t"+str(total)+" USD"+"\t"*(2-math.ceil(len("Profit")/6))+self.calc_profit()+" USD"+"\t"+growth+"%")
+    
+    def update(self):
+        self.tickers=self.worker.tickers
+        for ticker in self.tickers:
+            self.update_label(ticker, self.tickers[ticker].price)
+
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
