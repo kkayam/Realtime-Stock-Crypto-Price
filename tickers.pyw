@@ -60,7 +60,7 @@ class Stock():
     def update_price(self, price):
         self.price = price
         self.toString = self.name+self.tabs+self.price
-        if (self.position_exists):
+        if (self.position_exists and price!="-"):
             self.profit = (float(price)-self.position[1])*self.position[0]
             if (len(str(round(self.profit)))>3):
                 self.toString = self.name+self.tabs+self.price+"\t"+str(round(self.profit))+" USD\t"+str(format(100*(float(self.price)-self.position[1])/self.position[1],".1f"))+"%"
@@ -72,6 +72,7 @@ class Worker(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
     started = pyqtSignal()
+    emitted_start = False
     
     def __init__(self, callback, tickers):
         super().__init__()
@@ -85,8 +86,9 @@ class Worker(QObject):
             for i in message["data"]:
                 if i["s"] in self.tickers:
                     self.tickers[i["s"]].price = str(format(i["p"], '.6f'))
-        self.started.emit()
-
+        if not self.emitted_start:
+            self.started.emit()
+            self.emitted_start = True
     def on_error(self,ws, err):
         print("error---------------------------------")
         self.finished.emit()
@@ -178,14 +180,13 @@ class cssden(QMainWindow):
         self.setCentralWidget(widget)
         # </Label Properties>
         self.start_listener()
-        
-        
+    
         self.oldPos = self.pos()
         self.show()
     
     def start_updateTimer(self):
         self.updateTimer = QTimer(self)
-        self.updateTimer.setInterval(300)
+        self.updateTimer.setInterval(500)
         self.updateTimer.timeout.connect(self.update)
         self.updateTimer.start()
 
