@@ -1,4 +1,4 @@
-import sys, math,json, os.path, hashlib
+import sys, math,json, os.path, hashlib, time
 import requests
 from functools import reduce
 
@@ -87,6 +87,7 @@ class Worker(QObject):
                 if i["s"] in self.tickers:
                     self.tickers[i["s"]].price = str(format(i["p"], '.6f'))
         if not self.emitted_start:
+            time.sleep(2)
             self.started.emit()
             self.emitted_start = True
     def on_error(self,ws, err):
