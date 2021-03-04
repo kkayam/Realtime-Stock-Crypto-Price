@@ -55,7 +55,10 @@ class Stock():
     def update_label(self):
         self.label.setText(self.toString)
         if (self.position_exists):
-            self.total = self.position[0]*float(self.price)
+            try:
+                self.total = self.position[0]*float(self.price)
+            except:
+                pass
             self.label.setToolTip("@".join([str(x) for x in self.position])+" tot: "+str(self.total)+" USD")
     def update_price(self, price):
         self.price = price
@@ -87,7 +90,6 @@ class Worker(QObject):
                 if i["s"] in self.tickers:
                     self.tickers[i["s"]].price = str(format(i["p"], '.6f'))
         if not self.emitted_start:
-            time.sleep(2)
             self.started.emit()
             self.emitted_start = True
     def on_error(self,ws, err):
