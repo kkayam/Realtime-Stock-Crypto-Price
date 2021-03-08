@@ -112,7 +112,7 @@ class Worker(QObject):
 
 class cssden(QMainWindow):
 
-    def __init__(self, tickers, bg):
+    def __init__(self, tickers, bg, fontsize):
         super().__init__()
 
         # <MainWindow Properties>
@@ -152,7 +152,7 @@ class cssden(QMainWindow):
         tickers = sorted(list(filter(lambda x: x.position_exists,tickers)),key=lambda x: x.position[0]*x.position[1], reverse=True)+list(filter(lambda x: (not x.position_exists),tickers))
         for i,ticker in enumerate(tickers):
             label = QLabel(self)
-            label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
+            label.setStyleSheet("QLabel{color: white; font: "+fontsize+"pt 'Segoe WP';}")
             label.setText(ticker.toString)
             if (ticker.position_exists):
                 self.initial_investment += reduce(lambda x, y: x*y, ticker.position)
@@ -167,7 +167,7 @@ class cssden(QMainWindow):
             vbox.addWidget(seperator_horizontal)
             
             self.profit_label = QLabel(self)
-            self.profit_label.setStyleSheet("QLabel{color: white; font: 18pt 'Segoe WP';}")
+            self.profit_label.setStyleSheet("QLabel{color: white; font: "+fontsize+"pt 'Segoe WP';}")
             self.profit_label.setText("Profit"+"\t\t0"+"\t"*(2-math.ceil(len("Profit")/6))+"\t0")
             vbox.addWidget(self.profit_label)
             # self.profit_label.setGeometry(5, 35*len(tickers), width, 40)
@@ -256,8 +256,9 @@ if __name__ == '__main__':
     sys.excepthook = exception_hook 
     txt = open("config.txt")
     bg = txt.readline().split("=")[-1].strip()
+    fontsize = txt.readline().split("=")[-1].strip()
     tickers = [Stock(i.strip()) for i in txt.readlines()]
     app = QApplication(sys.argv)
-    ex = cssden(tickers,bg)
+    ex = cssden(tickers,bg,fontsize)
 
     sys.exit(app.exec_())
