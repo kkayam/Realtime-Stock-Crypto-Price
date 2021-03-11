@@ -101,14 +101,18 @@ class Worker(QObject):
         self.finished.emit()
 
     def run(self):
-        # yliveticker.YLiveTicker(on_ticker=self.callback, ticker_names=tickers)
-        websocket.enableTrace(True)
-        ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c0jbko748v6vejlec51g",
-                                on_message = self.on_message,
-                                on_error = self.on_error,
-                                on_close = self.on_close)
-        ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker.ticker+'"}') for ticker in self.tickers.values()]
-        ws.run_forever()
+        try:
+            # yliveticker.YLiveTicker(on_ticker=self.callback, ticker_names=tickers)
+            websocket.enableTrace(True)
+            ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c0jbko748v6vejlec51g",
+                                    on_message = self.on_message,
+                                    on_error = self.on_error,
+                                    on_close = self.on_close)
+            ws.on_open = lambda ws : [ws.send('{"type":"subscribe","symbol":"'+ticker.ticker+'"}') for ticker in self.tickers.values()]
+            ws.run_forever()
+        except:
+            time.sleep(2)
+            self.run()
 
 class cssden(QMainWindow):
 
